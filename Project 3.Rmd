@@ -1,0 +1,292 @@
+---
+title: "Recommendation of radical treatments for patients with double negative breast cancer cells"
+author: "Nhan Nguyen Vu An - 530604594"
+subtitle: "Project 3"
+date: "University of Sydney | DATA1001 | 27/10/2023"
+# You can change the title, subtitle, author etc.
+# if you do not want a subtitle, author, or date just delete or comment # the the line!
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    self_contained: yes
+    theme: flatly
+    # Other themes can be found at: https://bootswatch.com/
+    css: 
+      - https://use.fontawesome.com/releases/v5.0.6/css/all.css
+    #This will allow you to insert icons in your document, thanks to [Font Awesome](http://fontawesome.io).
+    #You will find an examples below.
+    # If you are knitting your document but not connected to the internet, place a "#" in front of the css line above with the font-awesome.min.css line to comment it out. This will let you knit the document in draft form until you connect again and knit the final. Note that when you do this some elements will be missing from the knitted slides. 
+    toc: true
+    #This adds a Table of Contents (toc).
+    toc_depth: 3
+    #This controls the number of subheadings included in the toc.
+    toc_float: true
+    #This allows toc to update relative to your location as you scroll down the html page.
+    code_folding: hide
+    #code_folding can be changed to "hide"" if you want the all your code to be collapsed when you open the document
+    
+    # More information: http://rmarkdown.rstudio.com/html_document_format.html
+---
+
+```{r, echo = FALSE}
+#install.packages("gridExtra")
+#install.packages("plotly")
+
+breast_cancer <- read.csv("breast_cancer.csv", header=TRUE)
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(gridExtra))
+
+dead_data <- breast_cancer[breast_cancer$Status == "Dead", ] #data on deceased patients
+N_N = subset(subset(breast_cancer, Estrogen.Status == "Negative"), Progesterone.Status == "Negative") # data on double negative cancer
+N_P = subset(subset(breast_cancer, Estrogen.Status == "Negative"), Progesterone.Status == "Positive") # data on Estrogen negative, Progesterone positive cancer
+P_N = subset(subset(breast_cancer, Estrogen.Status == "Positive"), Progesterone.Status == "Negative") # data on Estrogen positive, Progesterone negative cancer
+P_P = subset(subset(breast_cancer, Estrogen.Status == "Positive"), Progesterone.Status == "Positive") # data on double positive cancer
+N_N_Dead = subset(N_N, Status == "Dead") # data on double negative cancer in deceased patients
+P_P_Dead = subset(P_P, Status == "Dead") # data on double positive cancer in deceased patients
+```
+
+<br>
+
+# Client Bio & Recommendation
+- Kirsten Pilatti, CEO of Breast Cancer Network Australia (BCNA). The organisation's goal is to provide the best care and support for Australians suffering from breast cancer.
+
+- Linkedin: https://www.linkedin.com/in/kirsten-pilatti-6139219/
+
+- Website: https://www.bcna.org.au/about-us/who-we-are/
+
+- Recommendation: Patients found to have estrogen or progesterone negative cancer should be recommended to seek radical treatments like chemotherapy or surgery to preserve life instead of continuing hormone therapy as they are more likely to have both types of hormone negativity and experience more invasive, aggressive cancer.
+
+<br>
+
+ 
+# Evidence
+
+## Initial Data Analysis (IDA)
+
+Summary:
+
+```{r}
+summary(breast_cancer)
+```
+
+- The data came from the 2017 update of the SEER program involving female patients suffering from breast cancer of a specific type.
+
+- More information can be found here:
+
+[data](https://ieee-dataport.org/open-access/seer-breast-cancer-data)
+
+[source](https://www.kaggle.com/datasets/reihanenamdari/breast-cancer)
+
+[variable](https://www.cancer.net/navigating-cancer-care/diagnosing-cancer/stages-cancer)
+
+<br>
+
+## Hormone negativity and its relation to tumor size
+
+There are studies showing that hormone negative cancer cells are harder to treat and more aggressive as those which are positive can be combat with hormone therapy (Double Negative Breast Cancer, n.d.). To investigate this relation, two sets of comparative box plots were drawn.
+
+```{r}
+tumor_double_negative_plot <-ggplot(N_N, aes(x = factor(Estrogen.Status), y = Tumor.Size)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparative Boxplot of Tumor Size by Estrogen and Progesterone Status",
+    x = "Negative",
+    y = "Tumor Size"
+  )
+
+tumor_double_positive_plot <- ggplot(P_P, aes(x = factor(Progesterone.Status), y = Tumor.Size)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparative Boxplot of Tumor Size by Estrogen and Progesterone Status",
+    x = "Positive",
+    y = "Tumor Size"
+  )
+
+subplot(tumor_double_positive_plot, tumor_double_negative_plot, nrows = 1)
+```
+From these two comparative box plots, we can see that hormone negativity is associated with slightly larger tumor size.
+
+Two sample T-test to check the relation between double negative and double positive cancer on tumor size at 5% confidence level.
+
+```{r}
+data_NN <- N_N %>%
+  select(Tumor.Size)
+data_PP <- P_P %>%
+  select(Tumor.Size)
+t.test(data_NN, data_PP, var.equal = T)
+```
+
+The p_value 0.0001 < 0.05 means that the result is statistically significant and we conclude that there is evidence for the statement that patients with double negative cancer have larger tumors. This may warrant more radical treatments like surgery sooner to prevent having to resort to mastectomy (Surgery for Breast Cancer | Breast Cancer Treatment, n.d.).
+
+## Hormone negativity and its relation to survival months
+
+If hormone negativity is associated with more aggressive tumors, they would lead to a worse prognosis in patients, as reported by some studies (Double Negative Breast Cancer, n.d.). Two sets of comparative box plots using deceased patients for true survival months were drawn to check this relation.
+
+```{r}
+tumor_double_negative_plot <-ggplot(N_N_Dead, aes(x = factor(Estrogen.Status), y = Survival.Months)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparative Boxplot of Survival Months by Estrogen and Progesterone Status",
+    x = "Negative",
+    y = "Survival Months"
+  )
+
+tumor_double_positive_plot <- ggplot(P_P_Dead, aes(x = factor(Progesterone.Status), y = Survival.Months)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparative Boxplot of Survival Months by Estrogen and Progesterone Status",
+    x = "Positive",
+    y = "Survival Months"
+  )
+
+subplot(tumor_double_positive_plot, tumor_double_negative_plot, nrows = 1)
+```
+
+In these box plots, deceased patients are selected to ensure that their survival months are true survival months (time from diagnosis to death). Comparing these two box plots, it is clear that those who have hormone negative cancer of one of both types have a radically reduced survival months.
+
+Two sample T-test to check the relation between double negative and double positive cancer on survival months at 5% confidence level.
+
+```{r}
+data_NN_Survival <- N_N_Dead %>%
+  select(Survival.Months)
+data_PP_Survival <- P_P_Dead %>%
+  select(Survival.Months)
+t.test(data_NN, data_PP, var.equal = F)
+```
+
+The p_value 0.000784 < 0.05 means that the result is statistically significant and we conclude that there is evidence for the statement that patients with double negative cancer have a lower survival months. Once again, this may warrant radical treatments in order to preserve life (Surgery for Breast Cancer | Breast Cancer Treatment, n.d.).
+
+## Hormone negativity and its relation to itself
+
+As both Estrogen and Progesterone are important chemicals influencing the female reproductive functions, there might be a dependency between them (University, n.d.). A mosaic plot is drawn to check this relation.
+
+```{r}
+Hormone = matrix(c(nrow(N_N),nrow(P_N),nrow(N_P),nrow(P_P)), nrow = 2, ncol = 2, byrow = TRUE, dimnames = list(c("Estrogen Negative", "Estrogen Positive"), c("Progesterone Negative", "Progesterone Positive")))
+mosaicplot(Hormone)
+print(Hormone)
+```
+We can see that there is disproportionately more in the double positive group, suggesting dependency.
+
+Chi-square test to check relation between two types of hormone negativity at 5% confidence level
+
+```{r}
+chisq.test(Hormone)
+```
+As the p-value 2.2e-16 < 0.05, we can conclude that there is dependency. This would imply that having one type of hormone negativity leads to an increased chance of having the other, making hormone therapy not possible and so further the need for other treatment methods like surgery (Surgery for Breast Cancer | Breast Cancer Treatment, n.d.). 
+
+# Acknowledgments
+
+<br>
+
+teng, jing. (2019). SEER Breast Cancer Data. Ieee-Dataport.org. https://ieee-dataport.org/open-access/seer-breast-cancer-data
+
+Breast Cancer. (n.d.). Www.kaggle.com. 
+https://www.kaggle.com/datasets/reihanenamdari/breast-cancer
+
+Cancer.net. (2019, January 8). Stages of Cancer. Cancer.net. https://www.cancer.net/navigating-cancer-care/diagnosing-cancer/stages-cancer
+
+Double Negative Breast Cancer. (n.d.). Vial. Retrieved November 1, 2023, from https://vial.com/glossary/double-negative-breast-cancer/?https://vial.com/glossary/double-negative-breast-cancer/?utm_source=organic
+
+University, T. A. N. (n.d.). Oestrogen and Progesterone. Bluepages.anu.edu.au. https://bluepages.anu.edu.au/medical-treatments/oestrogen/#:~:text=Oestrogen%20(also%20called%20
+
+# Appendix
+
+## Client Choice
+
+The client Kirsten Pilatti, representing BCNA, was chosen as this report would contribute to advising the cancer patients.
+
+The choice to take or not to take radical treatments with severe possible side effects is a difficult decision that many cancer patients will have to face. There is no doubt that this is a question that BCNA would often face. With the idea of life over limbs at heart, this report content is centered around predicting the prognosis of cancer to justify advising radical treatments
+
+
+## Statisitcal Analyses
+
+### Hormone negativity and tumor size:
+
+H - H0: Progesterone and Estrogen negativity makes no difference to a patient's tumor size
+    H1: Progesterone and Estrogen negativity increase a patient's tumor size
+
+A - Independence, normality, equal spread
+
+Independence: We assumed independence due to the large sample making any possible dependency insignificant
+
+Normality: 
+
++ Eye test: The comparative box plots shows a significant number of outliers, possibly making this model invalid.
+
++ Shapiro-Wilk tests: Both p-values < 0.05, showing that the two data sets is not normal and so this model may be invalid
+
+```{r}
+data_NN_numerical <- as.numeric(unlist(data_NN))
+data_PP_numerical <- as.numeric(unlist(data_PP))
+
+shapiro.test(data_NN_numerical)
+shapiro.test(data_PP_numerical)
+```
+
+Equal spread:
+
++ Eye test: The comparative box plots shows roughly equal spread
+
++ Levene tests: As the p-value < 0.05, the two dataset can be considered having unequal spread, making some analysis possibly invalid.
+
+```{r}
+var.test(data_NN_numerical, data_PP_numerical)
+```
+
+### Hormone negativity and survival months:
+
+H - H0: Progesterone and Estrogen negativity makes no difference to a patient's survival months.
+    H1: Progesterone and Estrogen negativity reduce a patient's survival months.
+
+A - Independence, normality, equal spread.
+
+Independence: We assumed independence due to the large sample making any possible dependency insignificant.
+
+Normality:
+
++ Eye test: The comparative box plots shows small numbers of outliers.
+
++ Shapiro - Wilks tests: Both p-values < 0.05, showing that the two data sets is not normal and so this model may be invalid.
+```{r}
+data_NN_Survival_numerical <- as.numeric(unlist(data_NN_Survival))
+data_PP_Survival_numerical <- as.numeric(unlist(data_PP_Survival))
+
+shapiro.test(data_NN_Survival_numerical)
+shapiro.test(data_PP_Survival_numerical)
+```
+
+Equal spread:
+
++ Eye test: The comparative box plots shows slightly unequal spread.
+
++ Levene tests: As the p-value < 0.05, analysis using the Welch's T-test is more appropriate as the spread is unequal.
+
+```{r}
+var.test(data_NN_Survival_numerical, data_PP_Survival_numerical)
+```
+
+### Hormone negativity dependency on itself:
+
+H - H0: Progesterone and Estrogen negativity is independent 
+    H1: Progesterone and Estrogen negativity is not independent 
+
+A - Cochran’s Rule (satisfied, all expected values are > 5)
+
+## Limitations
+There is little data involving which treatment the participants have received. This will act as a confounding variable.
+
+There is little data on the real survival months of participants, time from the onset of cancer to death might be a better indicator.
+
+There are many outliers in the double positive group, making the correlation potentially invalid or weaker than expected.
+
+The datasets are not normal, making some conclusions potential invalid, further research required.
+
+
+
+
+
